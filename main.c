@@ -377,6 +377,31 @@ server_exec_command_line (const char *cmdline, int len, char *sendback, int sbsi
             }
             return 0;
         }
+        else if (parg[0] == '-') {
+            DB_plugin_t ** plugins = plug_get_list();
+            int i = 0;
+            int shift = 0;
+            while(plugins[i]) {
+                // send cmdline to all plugins
+                if (plugins[i]->exec_cmdline != NULL) {
+                    int ret = plugins[i]->exec_cmdline(parg, pend-parg);
+                    if (ret && ret > shift) {
+                        shift = ret;
+                    }
+                }
+                i++;
+            }
+            while (shift) {
+                if (parg < pend) {
+                    parg+= strlen(parg)+1;
+                }
+                shift--;
+            }
+            if (parg > pend) {
+                return 0;
+            }
+
+        }
         else if (parg[0] != '-') {
             break; // unknown option is filename
         }
