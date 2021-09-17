@@ -377,30 +377,52 @@ server_exec_command_line (const char *cmdline, int len, char *sendback, int sbsi
             }
             return 0;
         }
-        else if (parg[0] == '-') {
+        else if (!strncmp(parg, "--plugin=", strlen("--plugin="))) {
+            if (!strcmp(parg + strlen("--plugin="), "main")) {
+                parg += strlen(parg) + 1;
+                continue;
+            }
+
+            // get length until pend or next "--plugin" occurence
+            int parg_len = 0;
+            while ((parg + parg_len) < pend) {
+                if (parg_len && !strncmp(parg + parg_len, "--plugin=", strlen("--plugin="))) {
+                    break;
+                }
+                parg_len += strlen(parg + parg_len) + 1;
+            }
+            parg_len--;
+
+            const char *plugid = parg + strlen("--plugin=");
             DB_plugin_t ** plugins = plug_get_list();
             int i = 0;
-            int shift = 0;
-            while(plugins[i]) {
-                // send cmdline to all plugins
-                if (plugins[i]->exec_cmdline != NULL) {
-                    int ret = plugins[i]->exec_cmdline(parg, pend-parg);
-                    if (ret && ret > shift) {
-                        shift = ret;
+            while (plugins[i]) {
+                if (strcmp(plugins[i]->id, plugid) == 0) {
+                    if (plugins[i]->exec_cmdline != NULL) {
+                        int len = parg_len - strlen(parg) - 1;
+                        int ret = plugins[i]->exec_cmdline(parg + strlen(parg) + 1, len);
                     }
+                    break;
                 }
                 i++;
             }
-            while (shift) {
-                if (parg < pend) {
-                    parg+= strlen(parg)+1;
-                }
-                shift--;
+            parg += parg_len + 1;
+            continue;
+        }
+        else if (!strcmp(parg, "--plugin-list")) {
+            char out[2048];
+            int out_pos = 0;
+            int i = 0;
+            DB_plugin_t ** plugins = plug_get_list();
+            while (plugins[i] && (2048 - out_pos) >= 0) {
+                const char *format = plugins[i]->exec_cmdline ? "\033[32m%s\033[0m," : "%s,";
+                out_pos += snprintf (out + out_pos, 2048 - out_pos, format, plugins[i]->id);
+                i++;
             }
-            if (parg > pend) {
-                return 0;
+            out[out_pos - 1] = '\0';
+            if (sendback) {
+                snprintf (sendback, sbsize, "\1%s", out);
             }
-
         }
         else if (parg[0] != '-') {
             break; // unknown option is filename
