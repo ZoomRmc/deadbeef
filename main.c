@@ -399,8 +399,8 @@ server_exec_command_line (const char *cmdline, int len, char *sendback, int sbsi
             while (plugins[i]) {
                 if (strcmp(plugins[i]->id, plugid) == 0) {
                     if (plugins[i]->exec_cmdline != NULL) {
-                        int len = parg_len - strlen(parg) - 1;
-                        int ret = plugins[i]->exec_cmdline(parg + strlen(parg) + 1, len);
+                        int plugarg_len = (int)(parg_len - strlen(parg) - 1);
+                        int ret = plugins[i]->exec_cmdline(parg + strlen(parg) + 1, plugarg_len);
                     }
                     break;
                 }
