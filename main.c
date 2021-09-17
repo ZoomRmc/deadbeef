@@ -399,8 +399,26 @@ server_exec_command_line (const char *cmdline, int len, char *sendback, int sbsi
             while (plugins[i]) {
                 if (strcmp(plugins[i]->id, plugid) == 0) {
                     if (plugins[i]->exec_cmdline != NULL) {
+                        FILE *fp = tmpfile();
+                        if (!fp) {
+                            trace_err ("Creating tmpfile failed: %s\n", strerror(errno));
+                            return -1;
+                        }
+                        int fd = fileno (fp);
                         int plugarg_len = (int)(parg_len - strlen(parg) - 1);
-                        int ret = plugins[i]->exec_cmdline(parg + strlen(parg) + 1, plugarg_len);
+                        int ret = plugins[i]->exec_cmdline(parg + strlen(parg) + 1, plugarg_len, fd);
+                        // copy plugin output to sendback
+                        if (lseek(fd, 0, SEEK_CUR) && sendback) {
+                            fflush (fp);
+                            rewind (fp);
+                            sendback[0]='\1';
+                            int ret = fread (sendback+1, sbsize -1, 1, fp);
+                        }
+                        fclose (fp);
+                        if (ret) {
+                            // TODO have specific error codes sent to client?
+                            sendback[0] = '\2';
+                        }
                     }
                     break;
                 }
@@ -1256,11 +1274,17 @@ main (int argc, char *argv[]) {
         }
     }
 
+    const char *plugname = "main";
     for (int i = 1; i < argc; i++) {
+        if (!strncmp (argv[i], "--plugin=", strlen("--plugin="))) {
+            plugname = argv[i] + strlen("--plugin=");
+        }
         // help, version and nowplaying are executed with any filter
         if (!strcmp (argv[i], "--help") || !strcmp (argv[i], "-h")) {
-            print_help ();
-            return 0;
+            if (!strcmp (plugname, "main")) {
+                print_help ();
+                return 0;
+            }
         }
         else if (!strcmp (argv[i], "--version")) {
             printf ("DeaDBeeF " VERSION " Copyright © 2009-2021 Alexey Yakovenko\n");
@@ -1343,11 +1367,12 @@ main (int argc, char *argv[]) {
                 trace_err ("%s\n", out);
             }
         }
+        int exit_code = out[0] ? out[0] - 1 : 0;
         if (out) {
             free (out);
         }
         db_socket_close (s);
-        exit (0);
+        exit (exit_code);
     }
 //    else {
 //        perror ("INFO: failed to connect to existing session:");
