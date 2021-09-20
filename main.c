@@ -153,6 +153,9 @@ print_help (void) {
     fprintf (stdout, _("                      The NUM parameter can be specified in percents (absolute value or increment/decrement)\n"));
     fprintf (stdout, _("                      or in dB [-50, 0] (if with suffix).\n"));
     fprintf (stdout, _("                      Examples: --volume 80, --volume +10, --volume -5 or --volume -20dB\n"));
+    fprintf (stdout, _("   --plugin=[PLUG]    Send commands to a specific plugin. Use PLUG=main to send commands to deadbeef itself.\n"));
+    fprintf (stdout, _("                      To get plugin specific commands use --plugin=[PLUG] --help\n"));
+    fprintf (stdout, _("   --plugin-list      List all available plugins including indication for plugins that support commands.\n"));
 #ifdef ENABLE_NLS
     bind_textdomain_codeset (PACKAGE, "UTF-8");
 #endif
