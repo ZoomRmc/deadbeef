@@ -405,14 +405,23 @@ server_exec_command_line (const char *cmdline, int len, char *sendback, int sbsi
                             return -1;
                         }
                         int fd = fileno (fp);
-                        int plugarg_len = (int)(parg_len - strlen(parg) - 1);
-                        int ret = plugins[i]->exec_cmdline(parg + strlen(parg) + 1, plugarg_len, fd);
-                        // copy plugin output to sendback
-                        if (lseek(fd, 0, SEEK_CUR) && sendback) {
+                        size_t plugarg_len = parg_len - strlen(parg) - 1;
+                        int ret = plugins[i]->exec_cmdline(parg + strlen(parg) + 1, (int) plugarg_len, fd);
+
+                        off_t out_size = lseek(fd, 0, SEEK_END);
+                        // copy plugin output to sendback (if any output produced)
+                        if ((out_size > 0) && sendback) {
                             fflush (fp);
                             rewind (fp);
                             sendback[0]='\1';
-                            int ret = fread (sendback+1, sbsize -1, 1, fp);
+                            size_t bytes_read = fread (sendback + 1, 1, sbsize - 1, fp);
+                            if (bytes_read > 0) {
+                                sendback[bytes_read] = '\0';
+                            }
+                            else {
+                                trace_err ("Reading tmpfile failed\n");
+                                return -1;
+                            }
                         }
                         fclose (fp);
                         if (ret) {
