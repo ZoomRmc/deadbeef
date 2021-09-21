@@ -414,9 +414,9 @@ server_exec_command_line (const char *cmdline, int len, char *sendback, int sbsi
                     fflush (fp);
                     rewind (fp);
                     sendback[0]='\1';
-                    size_t bytes_read = fread (sendback + 1, 1, sbsize - 1, fp);
+                    size_t bytes_read = fread (sendback + 1, 1, sbsize - 2, fp);
                     if (bytes_read > 0) {
-                        sendback[bytes_read] = '\0';
+                        sendback[bytes_read + 1] = '\0';
                     }
                     else {
                         trace_err ("Reading tmpfile failed\n");
@@ -438,11 +438,12 @@ server_exec_command_line (const char *cmdline, int len, char *sendback, int sbsi
             int i = 0;
             DB_plugin_t ** plugins = plug_get_list();
             while (plugins[i] && (2048 - out_pos) >= 0) {
-                const char *format = plugins[i]->exec_cmdline ? "\033[32m%s\033[0m," : "%s,";
+                const char *format = plugins[i]->exec_cmdline ? "\033[32m%s\033[0m, " : "%s, ";
                 out_pos += snprintf (out + out_pos, 2048 - out_pos, format, plugins[i]->id);
                 i++;
             }
             out[out_pos - 1] = '\0';
+            out[out_pos - 2] = '\n';
             if (sendback) {
                 snprintf (sendback, sbsize, "\1%s", out);
             }
