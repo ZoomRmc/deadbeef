@@ -6,6 +6,10 @@ option('plugin-pulse',
        type : 'feature',
        value: 'auto',
        description : 'PulseAudio plugin')
+option('plugin-portaudio',
+       type : 'feature',
+       value: 'enabled',
+       description : 'PortAudio plugin')
 option('plugin-adplug',
        type : 'feature',
        value: 'auto',

@@ -161,6 +161,7 @@ subdir('plugins/alsa')
 subdir('plugins/pulse')
 subdir('plugins/nullout')
 subdir('plugins/oss')
+subdir('plugins/portaudio')
 
 # DSP plugins
 subdir('plugins/soundtouch')
