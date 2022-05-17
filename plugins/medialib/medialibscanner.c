@@ -72,10 +72,13 @@ ml_index (scanner_state_t *scanner, int can_terminate) {
         const char *uri = deadbeef->pl_find_meta (it, ":URI");
 
         const char *title = deadbeef->pl_find_meta (it, "title");
-        const char *artist = deadbeef->pl_find_meta (it, "artist");
+        const char *artist = deadbeef->pl_find_meta (it, "album artist");
 
         if (!artist) {
-            artist = unknown_artist;
+            artist = deadbeef->pl_find_meta (it, "artist");
+            if (!artist) {
+                artist = unknown_artist;
+            }
         }
 
         if (artist == unknown_artist) {
